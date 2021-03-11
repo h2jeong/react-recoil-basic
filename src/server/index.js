@@ -40,26 +40,48 @@ app.post('/user/register', (req, res) => {
     res.json(response)
 })
 
+app.post('/user/login', (req, res) => {
+    const response = {
+        success: false,
+        messag: '',
+        user: null
+    }
+
+    const user = users.find(u => u.username === req.body.username)
+
+    if (user) {
+        response.success = true;
+        response.message = 'Logged in successfully.'
+        response.user = user;
+        response.token = jwt.sign({ id: user.id }, 'SECRET')
+    } else {
+        response.message = 'Unable to login, user not found.'
+    }
+
+    res.json(response);
+})
+
 app.get('/note/list', (req, res) => {
     const response = {
         success: false,
         message: '',
         list: []
     }
-
     try {
-        let header = req.header.authentication;
-        const userToken = jwt.veryfy(header.split(' ')[1], 'SECRET')
-
+        let header = req.headers.authentication;
+        console.log('req:', header)
+        const userToken = jwt.verify(header.split(' ')[1], 'SECRET')
+        console.log('req:', header.split(' ')[1])
         const user = users.find(u => u.id === userToken.id);
+        console.log('req:', user)
 
         if (user) {
-            response.list = notes.filters(n => n.userId === user.id).reverse();
+            response.list = notes.filter(n => n.userId === user.id).reverse();
             response.success = true;
         } else {
             response.message = 'You are not authorized.'
         }
-    } catch (e) { response.message = 'You are noe authorizied.'}
+    } catch (e) { response.message = 'You are not authorizied.'}
 
     res.json(response);
 })
@@ -68,11 +90,11 @@ app.post('/note/create', (req, res) => {
     const response = {
         success: false,
         message: '',
-        let: []
+        list: []
     }
 
     try {
-        let header = req.header.authentication;
+        let header = req.headers.authentication;
         const userToken = jwt.verify(header.split(' ')[1], 'SECRET');
 
         const user = users.find(u => u.id === userToken.id);
